@@ -23,7 +23,7 @@ DVDの記録管理を行うサービスを担います
 
 ### 技術スタック
 
-- Python 3.12
+- Python 3
 - AWS SAM CLI
 - uv (パッケージ管理)
 
@@ -32,8 +32,7 @@ DVDの記録管理を行うサービスを担います
 
 | パラメータパス | 説明 |
 |---|---|
-| `/iso-keeper/dynamo-name` | DynamoDB テーブル名 |
-| `/iso-keeper/s3-isos-path` | iso格納先path(s3://...) |
-| `/iso-keeper/s3-metadata-path` | メタデータ格納先path(s3://...) |
+| `/dvd-keeper/dynamo/dbname` | DynamoDB テーブル名 |
+| `/dvd-keeper/s3/object-home-path` | データ格納先path(s3://...) |
 
 
