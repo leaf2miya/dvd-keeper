@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: DVD Keeper - S3 to DynamoDB sync
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.14
+
+Parameters:
+  S3ObjectHomePath:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dvd-keeper/s3/object-home-path
+  DynamoDBTableName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dvd-keeper/dynamo/dbname
+
+Resources:
+  S3ToDynamoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: s3_to_dynamo.handler
+      CodeUri: src/handlers/
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref DynamoDBTableName
+        - S3ReadPolicy:
+            BucketName: !Select [2, !Split ["/", !Ref S3ObjectHomePath]]
+
+  S3InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref S3ToDynamoFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub
+        - "arn:aws:s3:::${BucketName}"
+        - BucketName: !Select [2, !Split ["/", !Ref S3ObjectHomePath]]
+
+Outputs:
+  S3ToDynamoFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt S3ToDynamoFunction.Arn
+  S3ToDynamoFunctionName:
+    Description: Lambda Function Name
+    Value: !Ref S3ToDynamoFunction

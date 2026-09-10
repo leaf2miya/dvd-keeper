@@ -1,0 +1,17 @@
+[project]
+name = "iso-keeper"
+version = "0.1.0"
+description = "DVD の記録管理サービス"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "boto3>=1.43.91",
+    "moto[dynamodb,s3]>=5.2.3",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
