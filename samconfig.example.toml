@@ -1,9 +1,9 @@
 version = 0.1
 
 [default.deploy.parameters]
-stack_name = "dvd-keeper"
+stack_name = "<your-stack-name>"
 resolve_s3 = true
-s3_prefix = "dvd-keeper"
-region = "ap-northeast-1"
+s3_prefix = "<your-s3-prefix>"
+region = "<your-region>"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
