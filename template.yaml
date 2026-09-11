@@ -19,7 +19,7 @@ Resources:
   S3ToDynamoFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: dvd-keeper-s3-to-dynamo
+      FunctionName: dvdKeeperS3ToDynamo
       Handler: s3_to_dynamo.handler
       CodeUri: src/handlers/
       Architectures:
