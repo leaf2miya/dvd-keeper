@@ -36,8 +36,10 @@ Resources:
             TableName: !Ref DynamoDBTableName
         - S3ReadPolicy:
             BucketName: !Select [2, !Split ["/", !Ref S3ObjectHomePath]]
-        - SNSPublishMessagePolicy:
-            TopicArn: !Ref SnsFailureTopicArn
+        - Statement:
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref SnsFailureTopicArn
 
   S3ToDynamoEventInvokeConfig:
     Type: AWS::Lambda::EventInvokeConfig
