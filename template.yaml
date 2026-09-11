@@ -14,6 +14,9 @@ Parameters:
   DynamoDBTableName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /dvd-keeper/dynamo/dbname
+  SnsFailureTopicArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dvd-keeper/sns/failure-topic
 
 Resources:
   S3ToDynamoFunction:
@@ -33,6 +36,17 @@ Resources:
             TableName: !Ref DynamoDBTableName
         - S3ReadPolicy:
             BucketName: !Select [2, !Split ["/", !Ref S3ObjectHomePath]]
+        - SNSPublishMessagePolicy:
+            TopicArn: !Ref SnsFailureTopicArn
+
+  S3ToDynamoEventInvokeConfig:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: !Ref S3ToDynamoFunction
+      Qualifier: $LATEST
+      DestinationConfig:
+        OnFailure:
+          Destination: !Ref SnsFailureTopicArn
 
   S3InvokePermission:
     Type: AWS::Lambda::Permission

@@ -16,17 +16,22 @@ DVDの記録管理を行うサービスを担います
 
 ```
 S3 Upload → S3イベント通知 → Lambda → DynamoDB
+                                 ↓ (失敗時)
+                           Lambda Destinations → SNS通知
 ```
 
 1. S3の指定パス配下にファイルをアップロード
 2. S3イベント通知がLambdaを起動
 3. Lambdaがファイル名（拡張子除去）とContent-TypeをDynamoDBに保存
+4. Lambda実行失敗時、Lambda DestinationsによりSNSへ通知
 
 ### アーキテクチャ
 - ストレージ
   S3
 - メタデータ
   DynamoDB
+- 通知
+  SNS (Lambda実行失敗時)
 - コンピュート
   Lambda (Python 3.14)
 - IaC
@@ -50,6 +55,7 @@ S3 Upload → S3イベント通知 → Lambda → DynamoDB
 |---|---|
 | `/dvd-keeper/dynamo/dbname` | DynamoDB テーブル名 |
 | `/dvd-keeper/s3/object-home-path` | データ格納先path(s3://...) |
+| `/dvd-keeper/sns/failure-topic` | Lambda失敗通知用SNSトピックARN |
 
 ### SAM デプロイ設定
 
