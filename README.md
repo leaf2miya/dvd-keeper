@@ -143,6 +143,13 @@ resp, err := c.SearchItemList(dmmclient.SearchItemListParams{
 })
 ```
 
+### ビルド
+
+```bash
+cd dmm-client
+go build ./...
+```
+
 ### テスト
 
 ```bash

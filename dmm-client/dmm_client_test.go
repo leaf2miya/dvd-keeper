@@ -91,10 +91,10 @@ func TestSearchItemList_BuildsRequest(t *testing.T) {
 
 	// 実 API を呼ばずにリクエスト URL が正常に構築できることを検証する
 	svc := api.NewProductService(c.affiliateID, c.apiID)
-	svc.Site      = c.site
-	svc.Keyword   = params.Keyword
-	svc.Length    = params.Length
-	svc.Offset    = params.Offset
+	svc.Site = c.site
+	svc.Keyword = params.Keyword
+	svc.Length = params.Length
+	svc.Offset = params.Offset
 
 	url, err := svc.BuildRequestURL()
 	if err != nil {

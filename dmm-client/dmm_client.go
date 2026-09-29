@@ -46,17 +46,17 @@ func NewClient(affiliateID, apiID, site string) (*Client, error) {
 // SearchItemList は params を元に DMM 商品一覧を検索し、結果を返します。
 func (c *Client) SearchItemList(params SearchItemListParams) (*api.ProductResponse, error) {
 	svc := api.NewProductService(c.affiliateID, c.apiID)
-	svc.Site      = c.site
-	svc.Keyword   = params.Keyword
-	svc.Sort      = params.Sort
-	svc.Length    = params.Length
-	svc.Offset    = params.Offset
-	svc.Service   = params.Service
-	svc.Floor     = params.Floor
-	svc.Article   = params.Article
+	svc.Site = c.site
+	svc.Keyword = params.Keyword
+	svc.Sort = params.Sort
+	svc.Length = params.Length
+	svc.Offset = params.Offset
+	svc.Service = params.Service
+	svc.Floor = params.Floor
+	svc.Article = params.Article
 	svc.ArticleID = params.ArticleID
-	svc.GteDate   = params.GteDate
-	svc.LteDate   = params.LteDate
-	svc.Stock     = params.Stock
+	svc.GteDate = params.GteDate
+	svc.LteDate = params.LteDate
+	svc.Stock = params.Stock
 	return svc.Execute()
 }
