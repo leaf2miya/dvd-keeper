@@ -1,0 +1,6 @@
+github.com/dmmlabo/dmm-go-sdk v1.0.1 h1:77+jFW/1Q6qjJa2EkTvgrWlBkQjdgbaO7HM7+g927PM=
+github.com/dmmlabo/dmm-go-sdk v1.0.1/go.mod h1:bkM33pPHwgZL3OnMf4+LTAYLuqzzR9pv/AvbXGjbEdQ=
+github.com/dmmlabo/dmm-go-sdk v1.0.2-0.20180604053741-f67870f86d4b h1:LA8BhVpnhc8g+Ka5sVTAqbBkuZDtwFhFt0BBLt0xN4Y=
+github.com/dmmlabo/dmm-go-sdk v1.0.2-0.20180604053741-f67870f86d4b/go.mod h1:bkM33pPHwgZL3OnMf4+LTAYLuqzzR9pv/AvbXGjbEdQ=
+github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
+github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=

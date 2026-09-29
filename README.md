@@ -113,3 +113,46 @@ aws s3api put-bucket-notification-configuration \
 ```bash
 uv run pytest
 ```
+
+## DMM 商品検索 API クライアント (`dmm-client/`)
+
+### 概要
+
+DMM アフィリエイト API v3 の商品情報 API を利用して商品を検索する Go クライアントです。
+
+### セットアップ
+
+```bash
+cd dmm-client
+go mod download
+```
+
+### 使い方
+
+```go
+import dmmclient "github.com/leaf2miya/dvd-keeper/dmm-client"
+
+c, err := dmmclient.NewClient("your-affiliate-id-990", "your-api-id", "DMM.com")
+if err != nil {
+    log.Fatal(err)
+}
+
+resp, err := c.SearchItemList(dmmclient.SearchItemListParams{
+    Keyword: "DVD",
+    Length:  20,
+})
+```
+
+### ビルド
+
+```bash
+cd dmm-client
+go build ./...
+```
+
+### テスト
+
+```bash
+cd dmm-client
+go test ./...
+```
