@@ -23,6 +23,7 @@ type SearchItemListParams struct {
 	Floor     string
 	Article   string
 	ArticleID string
+	ContentID string
 	GteDate   string
 	LteDate   string
 	Stock     string
@@ -55,6 +56,7 @@ func (c *Client) SearchItemList(params SearchItemListParams) (*api.ProductRespon
 	svc.Floor = params.Floor
 	svc.Article = params.Article
 	svc.ArticleID = params.ArticleID
+	svc.ContentID = params.ContentID
 	svc.GteDate = params.GteDate
 	svc.LteDate = params.LteDate
 	svc.Stock = params.Stock
