@@ -223,3 +223,4 @@ samconfig.toml
 
 # Go
 /dmm-client/vendor/
+/dmm-client/cmd/
