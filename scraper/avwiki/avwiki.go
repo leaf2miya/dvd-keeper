@@ -76,7 +76,12 @@ func ParseSearchResult(htmlContent string) (*Result, error) {
 
 	result := &Result{Status: "succeeded"}
 
-	article := findFirstArticle(doc)
+	mainNode := findFirstElement(doc, "main")
+	if mainNode == nil {
+		return failedResult("no main element found"), nil
+	}
+
+	article := findFirstElement(mainNode, "article")
 	if article == nil {
 		return failedResult("no article found in search results"), nil
 	}
@@ -93,12 +98,14 @@ func failedResult(msg string) *Result {
 	return &Result{Status: "failed", ErrorMessage: msg}
 }
 
-func findFirstArticle(n *html.Node) *html.Node {
-	if n.Type == html.ElementNode && n.Data == "article" {
+// findFirstElement は n 配下から指定タグの最初の要素を深さ優先で探索します。
+// <main> → <article> のように探索起点を絞り込むことで、不要な領域の走査を避けます。
+func findFirstElement(n *html.Node, tag string) *html.Node {
+	if n.Type == html.ElementNode && n.Data == tag {
 		return n
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if found := findFirstArticle(c); found != nil {
+		if found := findFirstElement(c, tag); found != nil {
 			return found
 		}
 	}
