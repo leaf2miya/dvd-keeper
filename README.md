@@ -114,6 +114,55 @@ aws s3api put-bucket-notification-configuration \
 uv run pytest
 ```
 
+## av-wiki.net スクレイパー (`scraper/avwiki/`)
+
+### 概要
+
+av-wiki.net をスクレイピングして、各プラットフォーム（FANZA / MGS / SOKMIL）のコンテンツIDを取得する Go モジュールです。
+
+### セットアップ
+
+```bash
+cd scraper
+go mod download
+```
+
+### 使い方
+
+```go
+import "github.com/leaf2miya/dvd-keeper/scraper/avwiki"
+
+client := avwiki.NewClient()
+result, err := client.Search("NHDTB-096")
+```
+
+レスポンス:
+
+```json
+{
+  "status": "succeeded",
+  "error_message": "",
+  "manufacturer_code": "NHDTB-096",
+  "fanza_code": "1nhdtb00096",
+  "mgs_code": "116NHDTB-096",
+  "sokmil_code": "item282537"
+}
+```
+
+### ビルド
+
+```bash
+cd scraper
+go build ./...
+```
+
+### テスト
+
+```bash
+cd scraper
+go test -v ./...
+```
+
 ## DMM 商品検索 API クライアント (`dmm-client/`)
 
 ### 概要
