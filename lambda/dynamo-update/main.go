@@ -27,6 +27,11 @@ var reSymbols = regexp.MustCompile(`[^A-Z0-9]`)
 var reLetterDigit = regexp.MustCompile(`([A-Z])([0-9])`)
 var reDigitLetter = regexp.MustCompile(`([0-9])([A-Z])`)
 
+// s3PutObjecter は S3 への PutObject 操作を抽象化するインターフェースです。
+type s3PutObjecter interface {
+	PutObject(ctx context.Context, params *awss3.PutObjectInput, optFns ...func(*awss3.Options)) (*awss3.PutObjectOutput, error)
+}
+
 // failedRecord は S3 に保存する失敗レコードの構造体です。
 type failedRecord struct {
 	Reason string                     `json:"reason"`
@@ -69,7 +74,7 @@ func search(client *avwiki.Client, keywords []string) (*avwiki.Result, error) {
 }
 
 // saveFailureToS3 は失敗レコードをイベント情報ごと S3 に JSON 形式で保存します。
-func saveFailureToS3(ctx context.Context, s3Client *awss3.Client, bucket, prefix, filename, reason string, record events.DynamoDBEventRecord) error {
+func saveFailureToS3(ctx context.Context, s3Client s3PutObjecter, bucket, prefix, filename, reason string, record events.DynamoDBEventRecord) error {
 	rec := failedRecord{Reason: reason, Event: record}
 	body, err := json.Marshal(rec)
 	if err != nil {

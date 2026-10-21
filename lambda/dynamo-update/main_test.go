@@ -1,8 +1,69 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"io"
+	"strings"
 	"testing"
+
+	"github.com/aws/aws-lambda-go/events"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
+
+// stubS3Client は s3PutObjecter のスタブ実装です。
+type stubS3Client struct {
+	capturedInput *awss3.PutObjectInput
+}
+
+func (s *stubS3Client) PutObject(_ context.Context, params *awss3.PutObjectInput, _ ...func(*awss3.Options)) (*awss3.PutObjectOutput, error) {
+	s.capturedInput = params
+	return &awss3.PutObjectOutput{}, nil
+}
+
+func TestSaveFailureToS3(t *testing.T) {
+	stub := &stubS3Client{}
+	record := events.DynamoDBEventRecord{
+		EventName: "INSERT",
+		Change: events.DynamoDBStreamRecord{
+			NewImage: map[string]events.DynamoDBAttributeValue{
+				"filename": events.NewStringAttribute("HOGE-123"),
+			},
+		},
+	}
+
+	err := saveFailureToS3(context.Background(), stub, "my-bucket", "failures", "HOGE-123", "search failed", record)
+	if err != nil {
+		t.Fatalf("saveFailureToS3 returned error: %v", err)
+	}
+
+	if stub.capturedInput == nil {
+		t.Fatal("PutObject was not called")
+	}
+
+	if *stub.capturedInput.Bucket != "my-bucket" {
+		t.Errorf("Bucket = %q, want %q", *stub.capturedInput.Bucket, "my-bucket")
+	}
+	if !strings.Contains(*stub.capturedInput.Key, "HOGE-123") {
+		t.Errorf("Key %q does not contain filename", *stub.capturedInput.Key)
+	}
+
+	body, _ := io.ReadAll(stub.capturedInput.Body)
+	var rec failedRecord
+	if jsonErr := json.Unmarshal(body, &rec); jsonErr != nil {
+		t.Fatalf("body is not valid JSON: %v", jsonErr)
+	}
+	if rec.Reason != "search failed" {
+		t.Errorf("Reason = %q, want %q", rec.Reason, "search failed")
+	}
+	filenameAttr, ok := rec.Event.Change.NewImage["filename"]
+	if !ok {
+		t.Fatal("event.change.new_image.filename not found in body")
+	}
+	if filenameAttr.String() != "HOGE-123" {
+		t.Errorf("event filename = %q, want %q", filenameAttr.String(), "HOGE-123")
+	}
+}
 
 func TestBuildKeywords(t *testing.T) {
 	tests := []struct {
