@@ -225,3 +225,4 @@ samconfig.toml
 /dmm-client/vendor/
 /dmm-client/cmd/
 /scraper/cmd/
+/lambda/dynamo-update/dynamo-update

@@ -10,20 +10,25 @@ DVDの記録管理を行うサービスを担います
 
 - **オブジェクト管理**: s3上のDVD情報を管理します
 - **メタデータ同期**: S3へのファイルアップロードを契機にDynamoDBへメタデータを自動登録します
+- **メタデータ更新**: DynamoDB INSERTをトリガに追加情報を自動取得し反映します
 - **UI**: WEBUIから、キーワードおよびFuzzy検索を行います(予定)
 
 ### ワークフロー
 
 ```
-S3 Upload → S3イベント通知 → Lambda → DynamoDB
-                                 ↓ (失敗時)
-                           Lambda Destinations → SNS通知
+S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
+                                      ↓ (失敗時)              ↓ (INSERT)
+                               Lambda Destinations   Lambda(DynamoDB Update)
+                                 → SNS通知              ↓               ↓ (失敗時)
+                                                    DynamoDB更新      S3保存
 ```
 
 1. S3の指定パス配下にファイルをアップロード
-2. S3イベント通知がLambdaを起動
-3. Lambdaがファイル名（拡張子除去）とContent-TypeをDynamoDBに保存
+2. S3イベント通知がLambda(S3→DynamoDB)を起動
+3. LambdaがファイルメタデータをDynamoDBに保存
 4. Lambda実行失敗時、Lambda DestinationsによりSNSへ通知
+5. WebSearchを通して追加情報を取得しDynamoDBを更新
+6. 取得失敗時はS3に失敗レコードを保存（次回実行用）
 
 ### アーキテクチャ
 - ストレージ
@@ -33,7 +38,7 @@ S3 Upload → S3イベント通知 → Lambda → DynamoDB
 - 通知
   SNS (Lambda実行失敗時)
 - コンピュート
-  Lambda (Python 3.14)
+  Lambda (Python 3.14 / Go)
 - IaC
   AWS SAM
 - Web(予定)
@@ -44,6 +49,7 @@ S3 Upload → S3イベント通知 → Lambda → DynamoDB
 ### 技術スタック
 
 - Python 3.14
+- Go
 - AWS SAM CLI
 - uv (パッケージ管理)
 
@@ -56,6 +62,7 @@ S3 Upload → S3イベント通知 → Lambda → DynamoDB
 | `/dvd-keeper/dynamo/dbname` | DynamoDB テーブル名 |
 | `/dvd-keeper/s3/object-home-path` | データ格納先path(s3://...) |
 | `/dvd-keeper/sns/failure-topic` | Lambda失敗通知用SNSトピックARN |
+| `/dvd-keeper/s3/event-failed-store` | DynamoDB更新失敗レコード保存先パス(s3://...) |
 
 ### SAM デプロイ設定
 
@@ -112,6 +119,39 @@ aws s3api put-bucket-notification-configuration \
 
 ```bash
 uv run pytest
+```
+
+### DynamoDB Update Lambda テスト
+
+```bash
+cd lambda/dynamo-update
+go test -v ./...
+```
+
+## DynamoDB Update Lambda (`lambda/dynamo-update/`)
+
+### 概要
+
+DynamoDB InsertをトリガにWebSearchを実施し追加情報を取得。取得した情報でDynamoDBを更新する
+
+### 環境変数
+
+| 変数名 | 説明 | 参照SSMパラメータ |
+|---|---|---|
+| `DYNAMODB_TABLE_NAME` | DynamoDB テーブル名 | `/dvd-keeper/dynamo/dbname` |
+| `FAILURE_S3_PATH` | 失敗レコード保存先パス(s3://...) | `/dvd-keeper/s3/event-failed-store` |
+
+### 検索キーワード変換ロジック
+
+1. filename を大文字化 + `_` → `-` に変換
+2. 失敗時: 記号を除去し英数字のみに変換
+3. 失敗時: 英字と数字の境界にハイフンを挿入
+
+### ビルド
+
+```bash
+cd lambda/dynamo-update
+go build ./...
 ```
 
 ## av-wiki.net スクレイパー (`scraper/avwiki/`)

@@ -17,6 +17,9 @@ Parameters:
   SnsFailureTopicArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /dvd-keeper/sns/failure-topic
+  FailureS3Path:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dvd-keeper/s3/event-failed-store
 
 Resources:
   S3ToDynamoFunction:
@@ -60,6 +63,35 @@ Resources:
         - "arn:aws:s3:::${BucketName}"
         - BucketName: !Select [2, !Split ["/", !Ref S3ObjectHomePath]]
 
+  DynamoUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: dvdKeeperDynamoUpdate
+      Handler: bootstrap
+      CodeUri: lambda/dynamo-update/
+      Runtime: provided.al2023
+      AutoPublishAlias: live
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+          FAILURE_S3_PATH: !Ref FailureS3Path
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:UpdateItem
+              Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTableName}"
+        - Statement:
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub
+                - "arn:aws:s3:::${Bucket}/*"
+                - Bucket: !Select [2, !Split ["/", !Ref FailureS3Path]]
+    Metadata:
+      BuildMethod: makefile
+
 Outputs:
   S3ToDynamoFunctionArn:
     Description: Lambda Function ARN
@@ -67,3 +99,9 @@ Outputs:
   S3ToDynamoFunctionName:
     Description: Lambda Function Name
     Value: !Ref S3ToDynamoFunction
+  DynamoUpdateFunctionArn:
+    Description: DynamoDB Update Lambda Function ARN
+    Value: !GetAtt DynamoUpdateFunction.Arn
+  DynamoUpdateFunctionName:
+    Description: DynamoDB Update Lambda Function Name
+    Value: !Ref DynamoUpdateFunction
