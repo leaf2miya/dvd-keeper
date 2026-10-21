@@ -70,6 +70,7 @@ Resources:
       Handler: bootstrap
       CodeUri: lambda/dynamo-update/
       Runtime: provided.al2023
+      AutoPublishAlias: live
       Architectures:
         - arm64
       MemorySize: 128
