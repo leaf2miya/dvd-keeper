@@ -29,8 +29,8 @@ var reDigitLetter = regexp.MustCompile(`([0-9])([A-Z])`)
 
 // failedRecord は S3 に保存する失敗レコードの構造体です。
 type failedRecord struct {
-	Filename string `json:"filename"`
-	Reason   string `json:"reason"`
+	Reason string                     `json:"reason"`
+	Event  events.DynamoDBEventRecord `json:"event"`
 }
 
 // buildKeywords は filename から最大3種類の検索キーワードを生成します。
@@ -68,9 +68,9 @@ func search(client *avwiki.Client, keywords []string) (*avwiki.Result, error) {
 	return nil, lastErr
 }
 
-// saveFailureToS3 は失敗レコードを S3 に JSON 形式で保存します。
-func saveFailureToS3(ctx context.Context, s3Client *awss3.Client, bucket, prefix, filename, reason string) error {
-	rec := failedRecord{Filename: filename, Reason: reason}
+// saveFailureToS3 は失敗レコードをイベント情報ごと S3 に JSON 形式で保存します。
+func saveFailureToS3(ctx context.Context, s3Client *awss3.Client, bucket, prefix, filename, reason string, record events.DynamoDBEventRecord) error {
+	rec := failedRecord{Reason: reason, Event: record}
 	body, err := json.Marshal(rec)
 	if err != nil {
 		return fmt.Errorf("marshal failed record: %w", err)
@@ -159,7 +159,7 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 				reason = searchErr.Error()
 			}
 			log.Printf("search failed for %q: %s", filename, reason)
-			if s3Err := saveFailureToS3(ctx, s3Client, failureBucket, failurePrefix, filename, reason); s3Err != nil {
+			if s3Err := saveFailureToS3(ctx, s3Client, failureBucket, failurePrefix, filename, reason, record); s3Err != nil {
 				log.Printf("save to S3 failed: %v", s3Err)
 			}
 			processErrors = append(processErrors, fmt.Errorf("search failed for %q: %s", filename, reason))
@@ -168,7 +168,7 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 
 		if dbErr := updateDynamoDB(ctx, dbClient, tableName, filename, result); dbErr != nil {
 			log.Printf("dynamodb update failed for %q: %v", filename, dbErr)
-			if s3Err := saveFailureToS3(ctx, s3Client, failureBucket, failurePrefix, filename, dbErr.Error()); s3Err != nil {
+			if s3Err := saveFailureToS3(ctx, s3Client, failureBucket, failurePrefix, filename, dbErr.Error(), record); s3Err != nil {
 				log.Printf("save to S3 failed: %v", s3Err)
 			}
 			processErrors = append(processErrors, dbErr)
