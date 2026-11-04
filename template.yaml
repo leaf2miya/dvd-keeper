@@ -20,6 +20,9 @@ Parameters:
   FailureS3Path:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /dvd-keeper/s3/event-failed-store
+  DynamoDBStreamArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dvd-keeper/dynamo/stream-arn
 
 Resources:
   S3ToDynamoFunction:
@@ -89,8 +92,31 @@ Resources:
               Resource: !Sub
                 - "arn:aws:s3:::${Bucket}/*"
                 - Bucket: !Select [2, !Split ["/", !Ref FailureS3Path]]
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetRecords
+                - dynamodb:GetShardIterator
+                - dynamodb:DescribeStream
+                - dynamodb:ListStreams
+              Resource: !Ref DynamoDBStreamArn
     Metadata:
       BuildMethod: makefile
+
+  DynamoUpdateEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      FunctionName: !GetAtt DynamoUpdateFunction.Arn
+      EventSourceArn: !Ref DynamoDBStreamArn
+      StartingPosition: LATEST
+      BatchSize: 10
+      MaximumRetryAttempts: 2
+      MaximumRecordAgeInSeconds: 86400
+      ParallelizationFactor: 1
+      BisectBatchOnFunctionError: true
+      FilterCriteria:
+        Filters:
+          - Pattern: '{"eventName": ["INSERT"]}'
 
 Outputs:
   S3ToDynamoFunctionArn:

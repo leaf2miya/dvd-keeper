@@ -63,6 +63,7 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
 | `/dvd-keeper/s3/object-home-path` | データ格納先path(s3://...) |
 | `/dvd-keeper/sns/failure-topic` | Lambda失敗通知用SNSトピックARN |
 | `/dvd-keeper/s3/event-failed-store` | DynamoDB更新失敗レコード保存先パス(s3://...) |
+| `/dvd-keeper/dynamo/stream-arn` | DynamoDB Stream ARN |
 
 ### SAM デプロイ設定
 
@@ -114,6 +115,13 @@ aws s3api put-bucket-notification-configuration \
 - `<バケット名>`: SSMパラメータ `/dvd-keeper/s3/object-home-path` のバケット部分
 - `<Lambda関数のARN>`: `sam deploy` の出力 `S3ToDynamoFunctionArn` を参照
 - `<object-home-path のプレフィックス>`: SSMパラメータのパス部分（バケット名以降）
+
+### DynamoDB Streams 設定
+
+`sam deploy` 前に以下を手動で実施してください。
+
+1. DynamoDB テーブルの Streaming を有効化（StreamViewType: NEW_IMAGE）
+2. 取得した Stream ARN を SSMパラメータ `/dvd-keeper/dynamo/stream-arn` に登録
 
 ## テスト
 
