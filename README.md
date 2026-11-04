@@ -21,6 +21,8 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
                                Lambda Destinations   Lambda(DynamoDB Update)
                                  → SNS通知              ↓               ↓ (失敗時)
                                                     DynamoDB更新      S3保存
+                                                         ↓ (エラー時)
+                                                   CloudWatch Alarm → SNS通知
 ```
 
 1. S3の指定パス配下にファイルをアップロード
@@ -29,6 +31,7 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
 4. Lambda実行失敗時、Lambda DestinationsによりSNSへ通知
 5. WebSearchを通して追加情報を取得しDynamoDBを更新
 6. 取得失敗時はS3に失敗レコードを保存（次回実行用）
+7. Lambda(DynamoDB Update)のエラーをCloudWatch Alarmで監視し、1件以上発生でSNS通知
 
 ### アーキテクチャ
 - ストレージ
@@ -36,7 +39,7 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
 - メタデータ
   DynamoDB
 - 通知
-  SNS (Lambda実行失敗時)
+  SNS (Lambda実行失敗時 / CloudWatch Alarm)
 - コンピュート
   Lambda (Python 3.14 / Go)
 - IaC

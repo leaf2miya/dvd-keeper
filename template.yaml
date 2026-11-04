@@ -118,6 +118,24 @@ Resources:
         Filters:
           - Pattern: '{"eventName": ["INSERT"]}'
 
+  DynamoUpdateErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: dvdKeeper-DynamoUpdateFunction-Errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref DynamoUpdateFunction
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref SnsFailureTopicArn
+
 Outputs:
   S3ToDynamoFunctionArn:
     Description: Lambda Function ARN
