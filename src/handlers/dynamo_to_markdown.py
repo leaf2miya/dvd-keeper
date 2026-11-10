@@ -163,9 +163,6 @@ def full_sync_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     logger.info("Scanned %d items from DynamoDB", len(items))
 
     for item in items:
-        if not item.get(PRIMARY_KEY):
-            logger.warning("Skipping item without primary key: %s", item)
-            continue
         _put_markdown(bucket, prefix, item)
 
     logger.info("Full sync completed: %d files written", len(items))
