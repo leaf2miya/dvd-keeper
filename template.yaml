@@ -23,6 +23,9 @@ Parameters:
   DynamoDBStreamArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /dvd-keeper/dynamo/stream-arn
+  MarkdownOutputPath:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dvd-keeper/s3/markdown-output-path
 
 Resources:
   S3ToDynamoFunction:
@@ -118,6 +121,35 @@ Resources:
         Filters:
           - Pattern: '{"eventName": ["INSERT"]}'
 
+  DynamoToMarkdownFullSyncFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: dvdKeeperDynamoToMarkdownFullSync
+      Handler: dynamo_to_markdown.full_sync_handler
+      CodeUri: src/handlers/
+      Architectures:
+        - arm64
+      MemorySize: 256
+      Timeout: 300
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+          MARKDOWN_OUTPUT_PATH: !Ref MarkdownOutputPath
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTableName
+        - S3CrudPolicy:
+            BucketName: !Select [2, !Split ["/", !Ref MarkdownOutputPath]]
+
+  DynamoToMarkdownFullSyncEventInvokeConfig:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: !Ref DynamoToMarkdownFullSyncFunction
+      Qualifier: $LATEST
+      DestinationConfig:
+        OnFailure:
+          Destination: !Ref SnsFailureTopicArn
+
   DynamoUpdateErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -149,3 +181,9 @@ Outputs:
   DynamoUpdateFunctionName:
     Description: DynamoDB Update Lambda Function Name
     Value: !Ref DynamoUpdateFunction
+  DynamoToMarkdownFullSyncFunctionArn:
+    Description: DynamoDB to Markdown Full Sync Lambda Function ARN
+    Value: !GetAtt DynamoToMarkdownFullSyncFunction.Arn
+  DynamoToMarkdownFullSyncFunctionName:
+    Description: DynamoDB to Markdown Full Sync Lambda Function Name
+    Value: !Ref DynamoToMarkdownFullSyncFunction

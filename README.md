@@ -11,6 +11,7 @@ DVDの記録管理を行うサービスを担います
 - **オブジェクト管理**: s3上のDVD情報を管理します
 - **メタデータ同期**: S3へのファイルアップロードを契機にDynamoDBへメタデータを自動登録します
 - **メタデータ更新**: DynamoDB INSERTをトリガに追加情報を自動取得し反映します
+- **Markdown出力**: DynamoDBのデータをMarkdown形式でS3に出力します（AI RAG検索用途）
 - **UI**: WEBUIから、キーワードおよびFuzzy検索を行います(予定)
 
 ### ワークフロー
@@ -23,6 +24,10 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
                                                     DynamoDB更新      S3保存
                                                          ↓ (エラー時)
                                                    CloudWatch Alarm → SNS通知
+
+EventBridge(週次) → Lambda(全量Markdown出力) → S3(Markdown)
+                           ↓ (失敗時)
+                    Lambda Destinations → SNS通知
 ```
 
 1. S3の指定パス配下にファイルをアップロード
@@ -32,6 +37,9 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
 5. WebSearchを通して追加情報を取得しDynamoDBを更新
 6. 取得失敗時はS3に失敗レコードを保存（次回実行用）
 7. Lambda(DynamoDB Update)のエラーをCloudWatch Alarmで監視し、1件以上発生でSNS通知
+8. EventBridge(週次スケジュール)がLambda(全量Markdown出力)を起動
+9. DynamoDBを全件スキャンしてMarkdownをS3に出力（AI RAG検索用）
+10. Lambda失敗時、Lambda DestinationsによりSNSへ通知
 
 ### アーキテクチャ
 - ストレージ
@@ -67,6 +75,7 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
 | `/dvd-keeper/sns/failure-topic` | Lambda失敗通知用SNSトピックARN |
 | `/dvd-keeper/s3/event-failed-store` | DynamoDB更新失敗レコード保存先パス(s3://...) |
 | `/dvd-keeper/dynamo/stream-arn` | DynamoDB Stream ARN |
+| `/dvd-keeper/s3/markdown-output-path` | Markdown出力先パス(s3://...) |
 
 ### SAM デプロイ設定
 
@@ -163,6 +172,41 @@ DynamoDB InsertをトリガにWebSearchを実施し追加情報を取得。取�
 ```bash
 cd lambda/dynamo-update
 go build ./...
+```
+
+## DynamoDB to Markdown Lambda (`src/handlers/dynamo_to_markdown.py`)
+
+### 概要
+
+DynamoDB のデータを Markdown 形式で S3 に出力する。AI RAG 検索用途として利用する。
+
+### 環境変数
+
+| 変数名 | 説明 | 参照SSMパラメータ |
+|---|---|---|
+| `DYNAMODB_TABLE_NAME` | DynamoDB テーブル名 | `/dvd-keeper/dynamo/dbname` |
+| `MARKDOWN_OUTPUT_PATH` | Markdown出力先パス(s3://...) | `/dvd-keeper/s3/markdown-output-path` |
+
+### ハンドラ
+
+| ハンドラ名 | トリガ | 動作 |
+|---|---|---|
+| `full_sync_handler` | EventBridge（週次スケジュール / 手動） | 出力先S3を全削除後、DynamoDBを全件スキャンしてMarkdownを出力 |
+
+### Markdownフォーマット
+
+```markdown
+# filename: <primary_key>
+## 概要
+<RAG検索向けの自然文。各プラットフォームコードを含む>
+## レコード
+- **<ColumnName>** <カラムの説明>: <value>
+```
+
+### テスト
+
+```bash
+uv run pytest tests/test_dynamo_to_markdown.py
 ```
 
 ## av-wiki.net スクレイパー (`scraper/avwiki/`)
