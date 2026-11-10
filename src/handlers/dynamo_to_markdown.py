@@ -124,7 +124,7 @@ def _put_markdown(bucket: str, prefix: str, filename: str, content: str) -> None
     )
 
 
-def full_sync_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+def full_sync_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:  # context: Lambda コンテキストは boto3 に標準型定義がなく本関数内では使用しないため Any
     """DynamoDB を全件スキャンして Markdown を S3 に全量出力する Lambda ハンドラ。
 
     既存の Markdown ファイルを全削除後、全件を再生成する。
