@@ -105,15 +105,16 @@ def _delete_all_objects(bucket: str, prefix: str) -> None:
         logger.info("Deleted %d objects from s3://%s/%s", len(delete_keys), bucket, prefix_with_slash)
 
 
-def _put_markdown(bucket: str, prefix: str, filename: str, content: str) -> None:
-    """Markdown コンテンツを S3 に保存する。
+def _put_markdown(bucket: str, prefix: str, item: dict[str, Any]) -> None:
+    """DynamoDB レコードを Markdown に変換して S3 に保存する。
 
     Args:
         bucket: S3バケット名。
         prefix: 保存先プレフィックス。
-        filename: ファイル名（拡張子なし）。
-        content: Markdown コンテンツ。
+        item: DynamoDB レコードの辞書。
     """
+    filename = item.get(PRIMARY_KEY, "")
+    content = generate_markdown(item)
     prefix_with_slash = prefix.rstrip("/") + "/" if prefix else ""
     key = f"{prefix_with_slash}{filename}.md"
     s3_client.put_object(
@@ -162,12 +163,10 @@ def full_sync_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     logger.info("Scanned %d items from DynamoDB", len(items))
 
     for item in items:
-        filename = item.get(PRIMARY_KEY)
-        if not filename:
+        if not item.get(PRIMARY_KEY):
             logger.warning("Skipping item without primary key: %s", item)
             continue
-        content = generate_markdown(item)
-        _put_markdown(bucket, prefix, str(filename), content)
+        _put_markdown(bucket, prefix, item)
 
     logger.info("Full sync completed: %d files written", len(items))
     return {"status": "success", "count": len(items)}
