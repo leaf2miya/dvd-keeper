@@ -23,7 +23,7 @@ COLUMN_DESCRIPTIONS: dict[str, str] = {
 PRIMARY_KEY = "filename"
 
 
-def parse_s3_path(s3_path: str) -> tuple[str, str]:
+def _parse_s3_path(s3_path: str) -> tuple[str, str]:
     """s3://bucket/prefix 形式の文字列からバケット名とプレフィックスを返す。
 
     Args:
@@ -44,7 +44,7 @@ def parse_s3_path(s3_path: str) -> tuple[str, str]:
     return bucket, prefix
 
 
-def generate_markdown(item: dict[str, Any]) -> str:
+def _generate_markdown(item: dict[str, Any]) -> str:
     """DynamoDB のレコードから RAG 検索向け Markdown 文字列を生成する。
 
     Args:
@@ -114,7 +114,7 @@ def _put_markdown(bucket: str, prefix: str, item: dict[str, Any]) -> None:
         item: DynamoDB レコードの辞書。
     """
     filename = item.get(PRIMARY_KEY, "")
-    content = generate_markdown(item)
+    content = _generate_markdown(item)
     prefix_with_slash = prefix.rstrip("/") + "/" if prefix else ""
     key = f"{prefix_with_slash}{filename}.md"
     s3_client.put_object(
@@ -143,7 +143,7 @@ def full_sync_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     table_name = os.environ["DYNAMODB_TABLE_NAME"]
     markdown_s3_path = os.environ["MARKDOWN_OUTPUT_PATH"]
 
-    bucket, prefix = parse_s3_path(markdown_s3_path)
+    bucket, prefix = _parse_s3_path(markdown_s3_path)
     table = dynamodb.Table(table_name)
 
     logger.info("Starting full sync: table=%s, output=s3://%s/%s", table_name, bucket, prefix)

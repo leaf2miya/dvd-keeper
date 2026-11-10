@@ -37,17 +37,17 @@ def setup_aws(aws_env):
 
         sys.modules.pop("src.handlers.dynamo_to_markdown", None)
         from src.handlers.dynamo_to_markdown import (
+            _generate_markdown,
+            _parse_s3_path,
             full_sync_handler,
-            generate_markdown,
-            parse_s3_path,
         )
 
         yield {
             "s3": s3,
             "dynamodb": dynamodb,
             "full_sync_handler": full_sync_handler,
-            "generate_markdown": generate_markdown,
-            "parse_s3_path": parse_s3_path,
+            "generate_markdown": _generate_markdown,
+            "parse_s3_path": _parse_s3_path,
         }
 
 
