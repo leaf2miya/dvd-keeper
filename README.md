@@ -25,9 +25,11 @@ S3 Upload → S3イベント通知 → Lambda(S3→DynamoDB) → DynamoDB
                                                          ↓ (エラー時)
                                                    CloudWatch Alarm → SNS通知
 
-EventBridge(週次) → Lambda(全量Markdown出力) → S3(Markdown)
-                           ↓ (失敗時)
-                    Lambda Destinations → SNS通知
+EventBridge Scheduler(毎週日曜AM3:00 JST) → SNS通知(起動通知)
+                      ↓
+               Lambda(全量Markdown出力) → S3(Markdown)
+                      ↓ (失敗時)
+               Lambda Destinations → SNS通知
 ```
 
 1. S3の指定パス配下にファイルをアップロード
@@ -37,7 +39,7 @@ EventBridge(週次) → Lambda(全量Markdown出力) → S3(Markdown)
 5. WebSearchを通して追加情報を取得しDynamoDBを更新
 6. 取得失敗時はS3に失敗レコードを保存（次回実行用）
 7. Lambda(DynamoDB Update)のエラーをCloudWatch Alarmで監視し、1件以上発生でSNS通知
-8. EventBridge(週次スケジュール)がLambda(全量Markdown出力)を起動
+8. EventBridge Scheduler(毎週日曜AM3:00 JST)がLambda起動通知をSNSに送信し、Lambda(全量Markdown出力)を起動
 9. DynamoDBを全件スキャンしてMarkdownをS3に出力（AI RAG検索用）
 10. Lambda失敗時、Lambda DestinationsによりSNSへ通知
 
