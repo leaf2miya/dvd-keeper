@@ -140,6 +140,10 @@ Resources:
             TableName: !Ref DynamoDBTableName
         - S3CrudPolicy:
             BucketName: !Select [2, !Split ["/", !Ref MarkdownOutputPath]]
+        - Statement:
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref SnsFailureTopicArn
 
   DynamoToMarkdownFullSyncEventInvokeConfig:
     Type: AWS::Lambda::EventInvokeConfig
