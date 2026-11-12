@@ -209,11 +209,11 @@ DynamoDB のデータを Markdown 形式で S3 に出力する。AI RAG 検索�
 uv run pytest tests/test_dynamo_to_markdown.py
 ```
 
-## av-wiki.net スクレイパー (`scraper/avwiki/`)
+## コードスクレイパー (`scraper/avwiki/`)
 
 ### 概要
 
-av-wiki.net をスクレイピングして、各プラットフォーム（FANZA / MGS / SOKMIL）のコンテンツIDを取得する Go モジュールです。
+スクレイピングで、各プラットフォーム（FANZA / MGS / SOKMIL）のコンテンツIDを取得する Go モジュールです。
 
 ### セットアップ
 
