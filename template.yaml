@@ -154,6 +154,67 @@ Resources:
         OnFailure:
           Destination: !Ref SnsFailureTopicArn
 
+  EventBridgeSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowSnsPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref SnsFailureTopicArn
+        - PolicyName: AllowLambdaInvoke
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt DynamoToMarkdownFullSyncFunction.Arn
+
+  DynamoToMarkdownFullSyncSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: dvdKeeper-DynamoToMarkdownFullSync
+      ScheduleExpression: cron(0 3 ? * SUN *)
+      ScheduleExpressionTimezone: Asia/Tokyo
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt DynamoToMarkdownFullSyncFunction.Arn
+        RoleArn: !GetAtt EventBridgeSchedulerRole.Arn
+        RetryPolicy:
+          MaximumRetryAttempts: 0
+
+  DynamoToMarkdownFullSyncScheduleNotification:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: dvdKeeper-DynamoToMarkdownFullSync-Notification
+      ScheduleExpression: cron(0 3 ? * SUN *)
+      ScheduleExpressionTimezone: Asia/Tokyo
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !Ref SnsFailureTopicArn
+        RoleArn: !GetAtt EventBridgeSchedulerRole.Arn
+        Input: '{"message": "DynamoDB to Markdown full sync started"}'
+
+  DynamoToMarkdownFullSyncInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DynamoToMarkdownFullSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: scheduler.amazonaws.com
+      SourceArn: !GetAtt DynamoToMarkdownFullSyncSchedule.Arn
+
   DynamoUpdateErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
